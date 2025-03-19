@@ -1,0 +1,1036 @@
+openapi: 3.0.0
+info:
+  title: HamrahMes API
+  description: API documentation for HamrahMes backend services
+  version: 1.0.0
+  contact:
+    email: support@hamrahmes.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error message
+    
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+    
+    OTP:
+      type: object
+      properties:
+        mobile:
+          type: string
+          example: '09123456789'
+        code:
+          type: string
+          example: '123456'
+    
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        refreshToken:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        mobile:
+          type: string
+          example: '09123456789'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+    
+    ApiKey:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        key:
+          type: string
+          example: 'abc123-def456-ghi789'
+        senderName:
+          type: string
+          example: 'Tax System'
+        image:
+          type: string
+          example: '/download/abc123.jpg'
+        is_active:
+          type: boolean
+          example: true
+        createdBy:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        createdAt:
+          type: string
+          format: date-time
+    
+    Message:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        sender:
+          type: string
+          example: 'Tax System'
+        recipient:
+          type: string
+          example: '09123456789'
+        content:
+          type: string
+          example: 'Your tax payment is due next week'
+        timestamp:
+          type: string
+          format: date-time
+        senderImage:
+          type: string
+          example: 'http://localhost:3000/download/abc123.jpg'
+    
+    SystemInfo:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        name:
+          type: string
+          example: 'Tax Authority'
+        website:
+          type: string
+          example: 'https://tax.gov'
+        icon:
+          type: string
+          example: '/download/abc123.jpg'
+        category:
+          type: string
+          example: 'Government'
+        color:
+          type: string
+          example: '#FF5733'
+        is_active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+    
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '60d21b4667d0d8992e610c85'
+        imageUrl:
+          type: string
+          example: 'http://localhost:3000/download/abc123.jpg'
+
+paths:
+  /auth/send-otp:
+    post:
+      summary: Send OTP verification code
+      description: Sends a one-time password to the provided mobile number for verification
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobile
+              properties:
+                mobile:
+                  type: string
+                  example: '09123456789'
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '500':
+          description: Failed to send OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/verify-otp:
+    post:
+      summary: Verify OTP and get authentication tokens
+      description: Verifies the OTP code and returns JWT access and refresh tokens
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobile
+                - code
+              properties:
+                mobile:
+                  type: string
+                  example: '09123456789'
+                code:
+                  type: string
+                  example: '123456'
+      responses:
+        '200':
+          description: OTP verified successfully, tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '400':
+          description: Invalid OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh-token:
+    post:
+      summary: Refresh access token
+      description: Get a new access token using a refresh token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+      responses:
+        '200':
+          description: New tokens generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /auth/admin-token:
+    post:
+      summary: Generate admin token
+      description: Generate a JWT token with admin privileges
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobile
+              properties:
+                mobile:
+                  type: string
+                  example: '09123456789'
+      responses:
+        '200':
+          description: Admin token generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/update-user-status:
+    post:
+      summary: Update user active status
+      description: Enable or disable a user by mobile number
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobile
+                - is_active
+              properties:
+                mobile:
+                  type: string
+                  example: '09123456789'
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: User status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/update-apikey-status:
+    post:
+      summary: Update API key active status
+      description: Enable or disable an API key
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - is_active
+              properties:
+                key:
+                  type: string
+                  example: 'abc123-def456-ghi789'
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: API key status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  apiKey:
+                    $ref: '#/components/schemas/ApiKey'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/generate-key:
+    post:
+      summary: Generate a new API key
+      description: Generate a new API key with a specified sender name
+      tags:
+        - API Keys
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - senderName
+                - image
+              properties:
+                senderName:
+                  type: string
+                  example: 'Tax System'
+                image:
+                  type: string
+                  format: binary
+                  description: Sender logo image
+      responses:
+        '200':
+          description: API key generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    type: string
+                    example: 'abc123-def456-ghi789'
+                  imageUrl:
+                    type: string
+                    example: '/download/abc123.jpg'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/keys:
+    get:
+      summary: Get all API keys
+      description: Retrieve list of all API keys
+      tags:
+        - API Keys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKey'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/messages/send:
+    post:
+      summary: Send a message
+      description: Send a message to a specific recipient
+      tags:
+        - Messages
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recipient
+                - content
+              properties:
+                recipient:
+                  type: string
+                  example: '09123456789'
+                content:
+                  type: string
+                  example: 'Your tax payment is due next week'
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/messages:
+    get:
+      summary: Get user messages
+      description: Get paginated list of messages for the authenticated user
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Items per page
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 28
+                      page:
+                        type: integer
+                        example: 1
+                      pages:
+                        type: integer
+                        example: 3
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/system/info:
+    post:
+      summary: Add new system info
+      description: Add a new system to the directory
+      tags:
+        - System
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - website
+                - category
+                - icon
+              properties:
+                name:
+                  type: string
+                  example: 'Tax Authority'
+                website:
+                  type: string
+                  example: 'https://tax.gov'
+                category:
+                  type: string
+                  example: 'Government'
+                color:
+                  type: string
+                  example: '#FF5733'
+                icon:
+                  type: string
+                  format: binary
+                  description: System icon image
+      responses:
+        '201':
+          description: System added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get system info
+      description: Get all active systems grouped by category
+      tags:
+        - System
+      responses:
+        '200':
+          description: List of systems grouped by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    systemName:
+                      type: string
+                      example: 'Government'
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/SystemInfo'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/system/info/{id}/status:
+    patch:
+      summary: Update system status
+      description: Enable or disable a system
+      tags:
+        - System
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: System ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: System status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  system:
+                    $ref: '#/components/schemas/SystemInfo'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: System not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/system/info/{id}:
+    put:
+      summary: Update system info
+      description: Update an existing system's information
+      tags:
+        - System
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: System ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: 'Tax Authority'
+                website:
+                  type: string
+                  example: 'https://tax.gov'
+                icon:
+                  type: string
+                  example: '/download/abc123.jpg'
+      responses:
+        '200':
+          description: System updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  system:
+                    $ref: '#/components/schemas/SystemInfo'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: System not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/system/banners:
+    post:
+      summary: Add new banner
+      description: Upload a new banner image
+      tags:
+        - Banners
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Banner image
+      responses:
+        '201':
+          description: Banner added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Banner'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all banners
+      description: Get list of all banners
+      tags:
+        - Banners
+      responses:
+        '200':
+          description: List of banners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Banner'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/system/banners/{id}:
+    delete:
+      summary: Delete banner
+      description: Delete a banner by ID
+      tags:
+        - Banners
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Banner ID
+      responses:
+        '200':
+          description: Banner deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /download/{filename}:
+    get:
+      summary: Download file
+      description: Download a file by filename (images, etc.)
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          description: The name of the file to download
+      responses:
+        '200':
+          description: File downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Download failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

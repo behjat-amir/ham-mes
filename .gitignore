@@ -1,0 +1,37 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs/
+*.log
+
+# Environment Variables
+# .env (Including .env in git as requested)
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build Files
+dist/
+build/
+
+# Editor and OS Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Dependencies
+package-lock.json
+yarn.lock
+
+# Temporary Files
+.tmp/
+coverage/
+
+# Socket.io Debug Logs
+socket.io-debug.log
